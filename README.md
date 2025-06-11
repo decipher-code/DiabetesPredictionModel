@@ -1,4 +1,4 @@
-# 🩺 Diabetes Prediction Model
+# 🩺 Diabetes Prediction Web App
 
 This project uses machine learning to predict whether a patient has diabetes based on health-related attributes.
 
