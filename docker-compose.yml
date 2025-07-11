@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api 
+    ports:
+      - "8000:8000"
+    environment:
+    - API_KEY=mysecretkey123  
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    environment:
+    - API_KEY=mysecretkey123
+  volumes:
+    - ./:/app 
