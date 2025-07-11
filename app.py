@@ -1,10 +1,17 @@
 import streamlit as st
 import numpy as np
-import joblib 
+import requests
+import os
+from dotenv import load_dotenv
 
-# Load model and scaler
-model = joblib.load("diabetes_model.pkl")
-scaler = joblib.load("scaler.pkl")
+# Load env variables (if running locally)
+load_dotenv()
+
+# Get API key
+API_KEY = os.getenv("API_KEY")
+
+# Use the Docker service name as the API host (matches docker-compose.yml)
+API_URL = "http://api:8000/predict"
 
 # Page config
 st.set_page_config(page_title="Diabetes Risk Predictor", layout="centered")
@@ -25,38 +32,61 @@ age = st.number_input("Age", min_value=1)
 
 # Prediction
 if st.button("Predict Diabetes Risk"):
-    input_data = np.array([[pregnancies, glucose, blood_pressure, skin_thickness, insulin, bmi, diabetes_pedigree, age]])
-    input_scaled = scaler.transform(input_data)
-    prediction = model.predict(input_scaled)[0]
+    input_data = {
+        "pregnancies": pregnancies,
+        "glucose": glucose,
+        "blood_pressure": blood_pressure,
+        "skin_thickness": skin_thickness,
+        "insulin": insulin,
+        "bmi": bmi,
+        "diabetes_pedigree": diabetes_pedigree,
+        "age": age
+    }
 
-    if prediction == 1:
-        st.error("⚠️ You might be at risk for diabetes.")
-        st.markdown("### 🧭 Recommended Actions")
-        st.markdown("""
+    try:
+        response = requests.post(
+            API_URL,
+            json=input_data,
+            headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+        response.raise_for_status()
+        result = response.json()
+        prediction = result["prediction"]
+        confidence = result["confidence"]
+
+        if prediction == 1:
+            st.error(f"⚠️ You might be at risk for diabetes. Confidence: {confidence}%")
+            st.markdown("### 🧭 Recommended Actions")
+            st.markdown("""
 - 🏃‍♂️ **Exercise regularly**: Try at least 30 minutes a day, 5 times a week.  
-    👉 [Visit CDC Exercise Guidelines](https://www.cdc.gov/diabetes/managing/active.html)
+  👉 [Visit CDC Exercise Guidelines](https://www.cdc.gov/diabetes/managing/active.html)
 
 - 🥗 **Eat a balanced diet**: Reduce sugar, refined carbs, and saturated fats.  
-    👉 [Visit Harvard Healthy Eating Plate](https://www.hsph.harvard.edu/nutritionsource/healthy-eating-plate/)
+  👉 [Visit Harvard Healthy Eating Plate](https://www.hsph.harvard.edu/nutritionsource/healthy-eating-plate/)
 
 - 💧 **Stay hydrated** and avoid sugary drinks.  
 - 📉 **Monitor blood sugar levels** if you have access.  
 - 🩺 **See a healthcare provider** for further tests and advice.  
-        """)
-
-    else:
-        st.success("✅ You are likely not at high risk. Keep maintaining a healthy lifestyle!")
-        st.markdown("### 🌿 Healthy Habits to Maintain")
-        st.markdown("""
+            """)
+        else:
+            st.success(f"✅ You are likely not at high risk. Confidence: {confidence}%. Keep maintaining a healthy lifestyle!")
+            st.markdown("### 🌿 Healthy Habits to Maintain")
+            st.markdown("""
 - 🍎 **Continue a healthy diet**  
 - 🏃‍♀️ **Stay physically active**  
 - 🚭 **Avoid smoking and excessive alcohol**  
 - ⏱️ **Get regular checkups**, especially as you age  
 - 🧘 **Manage stress** through mindfulness or relaxation techniques  
-    👉 [Visit Stress Management - WHO](https://www.who.int/news-room/fact-sheets/detail/stress)
+  👉 [Visit Stress Management - WHO](https://www.who.int/news-room/fact-sheets/detail/stress)
 
 - 📘 [Learn more about preventing diabetes (CDC)](https://www.cdc.gov/diabetes/prevention/index.html)
-        """)
+            """)
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ API request failed: {e}")
 
 # Footer
 st.caption("⚠️ This is an AI-based estimate. Always consult a medical professional for medical advice or diagnosis.")
+
+        """)
+
