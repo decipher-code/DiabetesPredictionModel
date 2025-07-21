@@ -47,7 +47,7 @@ scaler = joblib.load("scaler.pkl")
 st.set_page_config(page_title="Diabetes Risk Predictor", layout="centered")
 st.image("pic_diabetes_awareness.jpg", caption="Your health matters.", width=550)
 
-st.title("🩺 Diabetes Risk Prediction App")
+st.title(" Diabetes Risk Prediction App")
 st.markdown("""
 Enter your medical details to assess your diabetes risk.  
 This tool provides insights and helpful resources.
